@@ -48,6 +48,8 @@ function restorePreviousFileOperations(
 
 export default function compactionModel(pi: ExtensionAPI): void {
   pi.on("session_before_compact", async (event, ctx) => {
+    restorePreviousFileOperations(event.preparation, event.branchEntries);
+
     const config = loadConfig(ctx);
     if (!config || !config.reasons.includes(event.reason)) return;
 
@@ -69,8 +71,6 @@ export default function compactionModel(pi: ExtensionAPI): void {
         warn(`Authentication failed for ${config.model}: ${auth.error}. Using Pi's active model.`);
         return;
       }
-
-      restorePreviousFileOperations(event.preparation, event.branchEntries);
 
       const result = await compact(
         event.preparation,
