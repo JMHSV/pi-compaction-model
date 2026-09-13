@@ -1,5 +1,6 @@
 import {
   compact,
+  type CompactionResult,
   type ExtensionAPI,
 } from "@earendil-works/pi-coding-agent";
 import { loadConfig, parseModelReference } from "./config.js";
@@ -72,17 +73,49 @@ export default function compactionModel(pi: ExtensionAPI): void {
 
       restorePreviousFileOperations(event.preparation, event.branchEntries);
 
-      const result = await compact(
-        event.preparation,
-        model,
-        auth.apiKey,
-        auth.headers,
-        event.customInstructions,
-        event.signal,
-        config.thinkingLevel,
-        undefined,
-        auth.env,
-      );
+      const MAX_ATTEMPTS = 3;
+      const RETRY_DELAY_MS = 3_000;
+
+      let result: CompactionResult | undefined;
+      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+        if (event.signal.aborted) return;
+        try {
+          result = await compact(
+            event.preparation,
+            model,
+            auth.apiKey,
+            auth.headers,
+            event.customInstructions,
+            event.signal,
+            config.thinkingLevel,
+            undefined,
+            auth.env,
+          );
+          break;
+        } catch (error) {
+          if (event.signal.aborted || attempt === MAX_ATTEMPTS) {
+            if (!event.signal.aborted) {
+              warn(
+                `Compaction with ${config.model} failed after ${MAX_ATTEMPTS} attempts; using Pi's active model.`,
+                error,
+              );
+            }
+            return;
+          }
+          await new Promise<void>((resolve) => {
+            const timer = setTimeout(resolve, RETRY_DELAY_MS);
+            event.signal.addEventListener(
+              "abort",
+              () => {
+                clearTimeout(timer);
+                resolve();
+              },
+              { once: true },
+            );
+          });
+          if (event.signal.aborted) return;
+        }
+      }
 
       return { compaction: result };
     } catch (error) {
