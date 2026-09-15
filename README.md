@@ -120,6 +120,12 @@ The resulting routing is:
 | Overflow recovery | Pi native compaction algorithm with the configured model |
 | Configured-model failure | Pi native fallback with the active model |
 
+## OpenRouter free models
+
+OpenRouter only serves its free endpoints to registered agentic harnesses, identified by app-attribution headers (`HTTP-Referer`, `X-OpenRouter-Title`, `X-OpenRouter-Categories`). Pi adds these headers to session requests, but the `compact()` path it exports bypasses that pipeline, so compaction requests to free models are rejected with a 403.
+
+This extension adds the same attribution headers to compaction requests for OpenRouter models (provider `openrouter`, or a base URL on `openrouter.ai`). As with Pi, attribution is only sent when install telemetry is enabled (the `enableInstallTelemetry` setting or the `PI_TELEMETRY` environment variable), and headers you configure yourself take precedence.
+
 ## Failure behavior
 
 The extension logs a warning and falls back to Pi's active model when:

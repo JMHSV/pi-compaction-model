@@ -10,7 +10,7 @@
         "typescript": "^7.0.2",
       },
       "peerDependencies": {
-        "@earendil-works/pi-coding-agent": "^0.80.7",
+        "@earendil-works/pi-coding-agent": ">=0.80.7",
       },
     },
   },
