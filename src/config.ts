@@ -95,14 +95,36 @@ export function resolveConfig(
   };
 }
 
-export function loadConfig(ctx: ExtensionContext): CompactionModelConfig | null {
-  const settings = SettingsManager.create(ctx.cwd, getAgentDir(), {
+export function createSettings(ctx: ExtensionContext): SettingsManager {
+  return SettingsManager.create(ctx.cwd, getAgentDir(), {
     projectTrusted: ctx.isProjectTrusted(),
   });
+}
 
+export function loadConfig(
+  ctx: ExtensionContext,
+  settings: SettingsManager,
+): CompactionModelConfig | null {
   return resolveConfig(
     settings.getGlobalSettings(),
     ctx.isProjectTrusted() ? settings.getProjectSettings() : undefined,
+  );
+}
+
+/**
+ * Mirrors pi-coding-agent's isInstallTelemetryEnabled: provider app
+ * attribution (e.g. OpenRouter's agentic-harness identification) is only
+ * sent when install telemetry is enabled.
+ */
+export function isInstallTelemetryEnabled(
+  settings: { getEnableInstallTelemetry(): boolean },
+  telemetryEnv: string | undefined = process.env.PI_TELEMETRY,
+): boolean {
+  if (telemetryEnv === undefined) return settings.getEnableInstallTelemetry();
+  return (
+    telemetryEnv === "1" ||
+    telemetryEnv.toLowerCase() === "true" ||
+    telemetryEnv.toLowerCase() === "yes"
   );
 }
 
