@@ -51,12 +51,11 @@ export function resolveConfig(
     ...(isRecord(projectSection) ? projectSection : {}),
   };
 
+  if (globalSection === undefined && projectSection === undefined) return null;
   if (raw.enabled === false) return null;
 
-  if (typeof raw.model !== "string" || !raw.model.trim()) {
-    if (globalSection !== undefined || projectSection !== undefined) {
-      warn("compactionModel.model must be a non-empty provider/model string; using Pi's active model.");
-    }
+  if (raw.model !== undefined && (typeof raw.model !== "string" || !raw.model.trim())) {
+    warn("compactionModel.model must be 'default' or a non-empty provider/model string; using Pi's active model.");
     return null;
   }
 
@@ -89,7 +88,7 @@ export function resolveConfig(
   }
 
   return {
-    model: raw.model.trim(),
+    model: typeof raw.model === "string" ? raw.model.trim() : "default",
     thinkingLevel,
     reasons,
   };

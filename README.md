@@ -45,7 +45,20 @@ Add `compactionModel` to `~/.pi/agent/settings.json`:
 }
 ```
 
-`model` must be a model known to Pi in `provider/model` form.
+Set `model` to a model known to Pi in `provider/model` form, or use `"default"` (or omit `model`) to dynamically use the session's active model at compaction time. This follows model changes during the session while still applying `thinkingLevel` and `reasons`.
+
+For example, to use the active model with a dedicated compaction thinking level:
+
+```json
+{
+  "compactionModel": {
+    "model": "default",
+    "thinkingLevel": "medium"
+  }
+}
+```
+
+If `compactionModel` itself is absent, the extension leaves compaction to Pi as usual.
 
 Supported thinking levels are:
 

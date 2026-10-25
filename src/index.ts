@@ -51,22 +51,25 @@ export default function compactionModel(pi: ExtensionAPI): void {
     const config = loadConfig(ctx);
     if (!config || !config.reasons.includes(event.reason)) return;
 
-    const reference = parseModelReference(config.model);
-    if (!reference) {
+    const reference = config.model === "default" ? undefined : parseModelReference(config.model);
+    if (reference === null) {
       warn(`Invalid model '${config.model}'; expected provider/model. Using Pi's active model.`);
       return;
     }
 
-    const model = ctx.modelRegistry.find(reference.provider, reference.modelId);
+    // Resolve at compaction time so session model changes are picked up automatically.
+    const model = reference ? ctx.modelRegistry.find(reference.provider, reference.modelId) : ctx.model;
     if (!model) {
       warn(`Model not found: ${config.model}. Using Pi's active model.`);
       return;
     }
 
+    const modelName = `${model.provider}/${model.id}`;
+
     try {
       const auth = await ctx.modelRegistry.getApiKeyAndHeaders(model);
       if (!auth.ok) {
-        warn(`Authentication failed for ${config.model}: ${auth.error}. Using Pi's active model.`);
+        warn(`Authentication failed for ${modelName}: ${auth.error}. Using Pi's active model.`);
         return;
       }
 
@@ -87,7 +90,7 @@ export default function compactionModel(pi: ExtensionAPI): void {
       return { compaction: result };
     } catch (error) {
       if (!event.signal.aborted) {
-        warn(`Compaction with ${config.model} failed; using Pi's active model.`, error);
+        warn(`Compaction with ${modelName} failed; using Pi's active model.`, error);
       }
       return;
     }

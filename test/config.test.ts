@@ -10,6 +10,36 @@ describe("resolveConfig", () => {
     expect(resolveConfig({}, {})).toBeNull();
   });
 
+  test.each([{}, { model: "default" }, { model: " default " }])(
+    "uses the active session model for %j",
+    (modelConfig) => {
+      const warnings: string[] = [];
+      expect(
+        resolveConfig(
+          { compactionModel: { ...modelConfig, thinkingLevel: "high", reasons: ["manual"] } },
+          {},
+          (message) => warnings.push(message),
+        ),
+      ).toEqual({ model: "default", thinkingLevel: "high", reasons: ["manual"] });
+      expect(warnings).toHaveLength(0);
+    },
+  );
+
+  test("project default overrides a hard-coded global model", () => {
+    expect(
+      resolveConfig(
+        { compactionModel: { model: "provider/base", thinkingLevel: "low" } },
+        { compactionModel: { model: "default" } },
+      ),
+    ).toEqual({ model: "default", thinkingLevel: "low", reasons: [...COMPACTION_REASONS] });
+  });
+
+  test.each([null, "", "   ", 42])("rejects invalid model %j", (model) => {
+    const warnings: string[] = [];
+    expect(resolveConfig({ compactionModel: { model } }, {}, (message) => warnings.push(message))).toBeNull();
+    expect(warnings).toHaveLength(1);
+  });
+
   test("defaults to every compaction reason", () => {
     expect(
       resolveConfig({ compactionModel: { model: "provider/model" } }, {}),
